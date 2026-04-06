@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdg-pgms"
+version = "0.1.0"
+description = "Probabilistic Graphical Models for Synthetic Data Generation"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "data-designer==0.5.2",
+    "numpy==2.3.1",
+    "pandas==2.3.3",
+    "pgmpy==0.1.26",
+    "pyarrow==19.0.1",
+    "pydantic==2.11.7",
+    "scipy==1.16.0",
+    "smart-open==7.3.0.post1",
+    "torch==2.7.1",
+    "tqdm==4.67.1",
+]
+
+[tool.ruff]
+target-version = "py310"
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "E501",  # line too long — handled by formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pgms", "data_designer_plugins"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "--import-mode=importlib"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+# Register data designer plugin
+[project.entry-points."data_designer.plugins"]
+pgm-generator = "data_designer_plugins.pgm_generator_plugin:plugin"

@@ -1,0 +1,13 @@
+sdg-pgms — Direct Dependency License Report
+Generated: 2026-03-05
+
+ 1. data-designer  0.5.2        Apache-2.0
+ 2. numpy          2.3.1        BSD License
+ 3. pandas         2.3.1        BSD License
+ 4. pgmpy          0.1.26       MIT
+ 5. pyarrow        21.0.0       Apache Software License
+ 6. pydantic       2.11.7       MIT
+ 7. scipy          1.16.0       BSD License
+ 8. smart-open     7.3.0.post1  MIT License
+ 9. torch          2.7.1        BSD License
+10. tqdm           4.67.1       MIT License; Mozilla Public License 2.0 (MPL 2.0)

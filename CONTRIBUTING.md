@@ -109,6 +109,7 @@ Open a [new issue](https://github.com/NVIDIA-NeMo/SDG-PGMs/issues/new) with:
 
     ```bash
     pip install -e .
+    pip install -r tests/requirements.txt
     ```
 
 3. **Verify your setup**

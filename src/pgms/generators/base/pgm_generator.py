@@ -262,7 +262,7 @@ class PGMGenerator(ABC):
     def generate_samples(
         self,
         size: int = 1,
-        evidence: dict[str, Any | list[Any]] = {},
+        evidence: dict[str, Any | list[Any]] | None = None,
         seed: int | None = None,
         partial_samples: pd.DataFrame | None = None,
         disable_progress_bar: bool = False,
@@ -270,7 +270,7 @@ class PGMGenerator(ABC):
         """Generate samples from the PGM."""
         if seed is not None:
             np.random.seed(seed)
-        evidence = evidence.copy()
+        evidence = {} if evidence is None else evidence.copy()
         self._validate_evidence(evidence)
         # More efficient to set root node evidence as partial samples directly
         for var, state in list(evidence.items()):

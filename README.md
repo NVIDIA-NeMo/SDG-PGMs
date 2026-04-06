@@ -24,7 +24,7 @@ pip install sdg-pgms
 Or install from source:
 
 ```bash
-git clone https://github.com/NVIDIA-NeMo/sdg-pgms.git
+git clone https://github.com/NVIDIA-NeMo/SDG-PGMs.git
 cd sdg-pgms
 pip install -e .
 ```

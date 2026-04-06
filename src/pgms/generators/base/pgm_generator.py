@@ -270,6 +270,7 @@ class PGMGenerator(ABC):
         """Generate samples from the PGM."""
         if seed is not None:
             np.random.seed(seed)
+        evidence = evidence.copy()
         self._validate_evidence(evidence)
         # More efficient to set root node evidence as partial samples directly
         for var, state in list(evidence.items()):

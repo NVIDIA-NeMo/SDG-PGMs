@@ -25,7 +25,7 @@ Or install from source:
 
 ```bash
 git clone https://github.com/NVIDIA-NeMo/SDG-PGMs.git
-cd sdg-pgms
+cd SDG-PGMs
 pip install -e .
 ```
 

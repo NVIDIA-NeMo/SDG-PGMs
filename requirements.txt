@@ -6,5 +6,5 @@ pyarrow==19.0.1
 pydantic==2.11.7
 scipy==1.16.0
 smart-open==7.3.0.post1
-torch==2.7.1
+torch>=2.10.0
 tqdm==4.67.1

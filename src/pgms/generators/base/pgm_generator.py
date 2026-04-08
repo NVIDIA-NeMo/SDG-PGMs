@@ -12,7 +12,7 @@ from pgmpy.factors.discrete import TabularCPD
 from pgmpy.models import BayesianNetwork
 from pgmpy.sampling import BayesianModelSampling
 from pydantic import BaseModel
-from tqdm import tqdm
+from rich.progress import Progress
 
 from pgms.generators.base.utils import bernoulli_ucb, tensor_normalize
 
@@ -315,8 +315,12 @@ class PGMGenerator(ABC):
         # Do the sampling by generating samples from forward sampling and rejecting the
         # samples which do not match our evidence. Keep doing until we have enough
         # samples.
+        progress = None
+        task_id = None
         if show_progress and config.SHOW_PROGRESS:
-            pbar = tqdm(total=size)
+            progress = Progress()
+            task_id = progress.add_task("Sampling", total=size)
+            progress.start()
 
         slow_progress_warning = False
 
@@ -353,8 +357,8 @@ class PGMGenerator(ABC):
             if prob_ucb < REJ_SAMP_FAIL_PROB or (
                 prob_ucb < REJ_SAMP_LARGE_FAIL_PROB and _size > REJ_SAMP_LARGE_FAIL_SIZE
             ):
-                if show_progress and config.SHOW_PROGRESS:
-                    pbar.close()
+                if progress is not None:
+                    progress.stop()
                 raise TimeoutError(
                     f"The given requirements {evidence} are too restrictive. Please remove some restrictions and try again."
                 )
@@ -364,13 +368,13 @@ class PGMGenerator(ABC):
                 )
                 slow_progress_warning = True
 
-            if show_progress and config.SHOW_PROGRESS:
+            if progress is not None:
                 # Update at maximum to `size`
                 comp = _sampled.shape[0] if i < size else size - (i - _sampled.shape[0])
-                pbar.update(comp)
+                progress.update(task_id, advance=comp)
 
-        if show_progress and config.SHOW_PROGRESS:
-            pbar.close()
+        if progress is not None:
+            progress.stop()
 
         sampled = sampled.reset_index(drop=True)
         return sampled

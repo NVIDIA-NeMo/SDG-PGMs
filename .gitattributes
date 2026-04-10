@@ -1,3 +1,2 @@
 data/*.tar filter=lfs diff=lfs merge=lfs -text
 src/pgms/data/*.tar filter=lfs diff=lfs merge=lfs -text
-src/pgms/data/jp/*json filter=lfs diff=lfs merge=lfs -text

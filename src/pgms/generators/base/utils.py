@@ -9,13 +9,13 @@ from torch.nn.functional import normalize
 
 
 def tensor_normalize(
-    array: np.ndarray, dtype: torch.dtype, device: str
+    array: np.ndarray | torch.Tensor, dtype: torch.dtype, device: str | torch.device
 ) -> torch.Tensor:
     """
-    Normalize a numpy array and convert it to a PyTorch tensor.
+    Normalize an array and convert it to a PyTorch tensor.
 
     Args:
-        array: Numpy array to normalize
+        array: Numpy array or PyTorch tensor to normalize.
         dtype: PyTorch data type to convert to.
         device: Device to move the tensor to.
 
@@ -45,6 +45,6 @@ def load_file(file_info: tuple[str, str]) -> tuple[str, pd.DataFrame]:
 
 def bernoulli_ucb(successes, n, confidence=0.95):
     """
-    Calculate the upper confidence bound of a Bernoulli processs.
+    Calculate the upper confidence bound of a Bernoulli process.
     """
     return stats.beta.ppf(confidence, successes + 1, n - successes)

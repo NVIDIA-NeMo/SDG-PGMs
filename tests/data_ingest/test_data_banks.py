@@ -7,7 +7,7 @@ import tempfile
 
 import pandas as pd
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from pgms.data_ingest.data_banks import TarFileMixin
 
@@ -18,11 +18,10 @@ DUMMY_TARFILE_PATHS = {
 
 
 class DummyTarData(BaseModel, TarFileMixin):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     a: pd.DataFrame
     b: pd.DataFrame
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 def create_tarfile_with_dfs(tmp_path, df_a, df_b=None):
@@ -73,7 +72,7 @@ def test_from_tarfile_missing_subfile(tmp_path, sample_data):
 def test_to_tarfile_valid(tmp_path, sample_data):
     """Test that to_tarfile creates a tar file with the expected contents."""
     _, _, instance = sample_data
-    tar_path = tmp_path / "output.tar."
+    tar_path = tmp_path / "output.tar"
     instance.to_tarfile(str(tar_path), DUMMY_TARFILE_PATHS)
     with tarfile.open(str(tar_path), "r:") as tar:
         names = tar.getnames()
@@ -93,7 +92,7 @@ def test_to_tarfile_missing_attribute(tmp_path, sample_data):
     _, _, instance = sample_data
     # Remove attribute 'b'
     delattr(instance, "b")
-    tar_path = tmp_path / "output_missing.tar."
+    tar_path = tmp_path / "output_missing.tar"
     with pytest.raises(AttributeError):
         instance.to_tarfile(str(tar_path), DUMMY_TARFILE_PATHS)
 
@@ -101,4 +100,4 @@ def test_to_tarfile_missing_attribute(tmp_path, sample_data):
 def test_from_tarfile_invalid_path():
     """Test that from_tarfile raises an exception when provided an invalid file path."""
     with pytest.raises(Exception):
-        DummyTarData.from_tarfile("nonexistent_file.tar.", DUMMY_TARFILE_PATHS)
+        DummyTarData.from_tarfile("nonexistent_file.tar", DUMMY_TARFILE_PATHS)

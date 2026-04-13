@@ -62,6 +62,7 @@ class PGMGenerator(ABC):
         if not PGMGenerator._pgmpy_configured:
             config.set_backend("torch")
             config.set_dtype(torch.float32)
+            logging.getLogger("pgmpy").setLevel(logging.ERROR)
             warnings.filterwarnings(
                 "ignore",
                 message="Passing a DataFrame to DataFrame.from_records is deprecated.*",
@@ -184,12 +185,12 @@ class PGMGenerator(ABC):
         evidence_size = np.prod(evidence_dims) if evidence_dims else 1
 
         def _build_rows():
-            # Calculate row (variable) indices
-            try:
-                counts_var = counts[variable_name].cat.codes.to_numpy(dtype=np.int64)
-            except AttributeError as e:
-                logger.debug("%s, %s", variable_name, counts.columns)
-                raise e
+            if not hasattr(counts[variable_name], "cat"):
+                raise TypeError(
+                    f"Column '{variable_name}' must be a categorical dtype, "
+                    f"got {counts[variable_name].dtype!r}"
+                )
+            counts_var = counts[variable_name].cat.codes.to_numpy(dtype=np.int64)
             return torch.from_numpy(counts_var)
 
         def _build_cols():
@@ -205,11 +206,12 @@ class PGMGenerator(ABC):
 
             # Vectorized calculation for each evidence variable
             for ev, stride in zip(evidence, strides):
-                try:
-                    counts_ev = counts[ev].cat.codes.to_numpy(dtype=np.int64)
-                except AttributeError as e:
-                    logger.debug("%s, %s", ev, counts.columns)
-                    raise e
+                if not hasattr(counts[ev], "cat"):
+                    raise TypeError(
+                        f"Evidence column '{ev}' must be a categorical dtype, "
+                        f"got {counts[ev].dtype!r}"
+                    )
+                counts_ev = counts[ev].cat.codes.to_numpy(dtype=np.int64)
                 ev_indices = torch.from_numpy(counts_ev)
                 cols += ev_indices * stride
             return cols

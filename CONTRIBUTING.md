@@ -108,14 +108,13 @@ Open a [new issue](https://github.com/NVIDIA-NeMo/SDG-PGMs/issues/new) with:
 2. **Install dependencies**
 
     ```bash
-    pip install -e .
-    pip install -r tests/requirements.txt
+    uv sync
     ```
 
 3. **Verify your setup**
 
     ```bash
-    pytest
+    uv run pytest
     ```
 
     If no errors are reported, you're ready to develop.
@@ -152,9 +151,9 @@ Open a [new issue](https://github.com/NVIDIA-NeMo/SDG-PGMs/issues/new) with:
 3. **Test and validate**
 
     ```bash
-    ruff check --fix .   # Fix linting issues
-    ruff format .        # Format code
-    pytest               # Run all tests
+    uv run ruff check --fix .   # Fix linting issues
+    uv run ruff format .        # Format code
+    uv run pytest               # Run all tests
     ```
 
     **Writing tests**: Place tests in the `tests/` directory mirroring the source structure. Mock external services with `unittest.mock`, and test both success and failure cases.
@@ -182,8 +181,8 @@ Open a [new issue](https://github.com/NVIDIA-NeMo/SDG-PGMs/issues/new) with:
 
 Ensure your changes meet the following criteria:
 
-- All tests pass (`pytest`)
-- Code is formatted and linted (`ruff check . && ruff format --check .`)
+- All tests pass (`uv run pytest`)
+- Code is formatted and linted (`uv run ruff check . && uv run ruff format --check .`)
 - New functionality includes tests
 - Documentation is updated (README, docstrings, examples)
 - License headers are present on all new files
@@ -222,7 +221,7 @@ All code files that are added to this repository must include the appropriate NV
 
 ## Signing off on your work
 
-When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project license. All contributors are asked to sign the SDG-PGMs [Developer Certificate of Origin (DCO)](https://github.com/NVIDIA-NeMo/SDG-PGMs/blob/main/DCO.txt) when submitting their first pull request. The process is automated by a bot that will comment on the pull request. Our DCO is the same as the Linux Foundation requires its contributors to sign.
+When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project license. All contributors are asked to sign the SDG-PGMs [Developer Certificate of Origin (DCO)](https://github.com/NVIDIA-NeMo/SDG-PGMs/blob/main/DCO) when submitting their first pull request. The process is automated by a bot that will comment on the pull request. Our DCO is the same as the Linux Foundation requires its contributors to sign.
 
 ---
 

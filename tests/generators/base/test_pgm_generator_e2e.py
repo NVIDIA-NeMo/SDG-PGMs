@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """
 End-to-end test for a cascaded multi-field PGM generator.
 
@@ -23,7 +26,7 @@ import pandas as pd
 import pytest
 from pgmpy.factors.discrete import TabularCPD
 
-from pgms.generators.base.pgm_generator import PGMGenerator
+from pgms.generators.base.pgm_generator import Edge, PGMGenerator
 
 SENIORITY_TO_EXPERIENCE = {
     "junior": "0-3",
@@ -45,8 +48,8 @@ class EmployeeGenerator(PGMGenerator):
 
     def get_edges(self):
         return [
-            [("department", "_seniority")],
-            [("_seniority", "salary_band")],
+            [Edge(start="department", end="_seniority")],
+            [Edge(start="_seniority", end="salary_band")],
         ]
 
     def get_variables(self, data):

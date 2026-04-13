@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Data Designer plugin for generating synthetic data via a PGMGenerator.
 
@@ -6,7 +9,7 @@ Any subclass of PGMGenerator can be used by passing its dotted module path as
 
     PGMGeneratorPluginConfig(
         name="person",
-        generator_class="myrecipes.generators.MyPersonGenerator",
+        generator_class="my_generators.MyPersonGenerator",
         evidence={"region": "West"},
     )
 
@@ -66,7 +69,7 @@ class PGMGeneratorPluginConfig(SingleColumnConfig):
 
     Attributes:
         generator_class: Fully-qualified dotted path to a PGMGenerator
-            subclass, e.g. ``"myrecipes.generators.MyPersonGenerator"``.
+            subclass, e.g. ``"my_generators.MyPersonGenerator"``.
         evidence: Optional dictionary for rejection sampling.  Keys are
             field names; values can be a single value or a list of allowed
             values. Example: ``{"region": "West"}``

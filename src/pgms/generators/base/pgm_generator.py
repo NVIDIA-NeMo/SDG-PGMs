@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import warnings
 from abc import ABC, abstractmethod
@@ -16,20 +19,7 @@ from rich.progress import Progress
 
 from pgms.generators.base.utils import bernoulli_ucb, tensor_normalize
 
-# Set up logging
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-# Warnings occur even when off by a floating point error (~1e-16)
-logging.getLogger("pgmpy").setLevel(logging.ERROR)
-warnings.filterwarnings(
-    "ignore",
-    message="Passing a DataFrame to DataFrame.from_records is deprecated.*",
-    category=FutureWarning,
-)
-
-config.set_backend("torch")
-config.set_dtype(torch.float32)
 
 ### REJECTION SAMPLING CONSTANTS
 # Throw error if the rejection sampling success rate is below this value
@@ -65,8 +55,21 @@ class PGMGenerator(ABC):
         - get_cpds
     """
 
+    _pgmpy_configured = False
+
     def __init__(self, *args, **kwargs):
-        """Subclasses should override this instead of __init__"""
+        """Orchestrate PGM construction via the template methods."""
+        if not PGMGenerator._pgmpy_configured:
+            config.set_backend("torch")
+            config.set_dtype(torch.float32)
+            logging.getLogger("pgmpy").setLevel(logging.ERROR)
+            warnings.filterwarnings(
+                "ignore",
+                message="Passing a DataFrame to DataFrame.from_records is deprecated.*",
+                category=FutureWarning,
+            )
+            PGMGenerator._pgmpy_configured = True
+
         data = self.get_data(*args, **kwargs)
         edges = self.get_edges(*args, **kwargs)
         self.variables = self.get_variables(data)
@@ -81,7 +84,7 @@ class PGMGenerator(ABC):
         ]
 
     @abstractmethod
-    def get_data(self, *args, **kwargs) -> BaseModel:
+    def get_data(self, *args, **kwargs) -> Any:
         """Load statistical data for the PGM."""
         ...
 
@@ -91,16 +94,16 @@ class PGMGenerator(ABC):
         ...
 
     @abstractmethod
-    def get_variables(self, data: BaseModel) -> dict[str, list[str]]:
+    def get_variables(self, data: Any) -> dict[str, list[str]]:
         """Load variables for the PGM."""
         ...
 
     @abstractmethod
-    def get_cpds(self, data: BaseModel) -> list[dict[str, TabularCPD]]:
-        """Create Conditional Probability Distributions (edges in the PGM)."""
+    def get_cpds(self, data: Any) -> list[dict[str, TabularCPD]]:
+        """Create Conditional Probability Distributions for the PGM nodes."""
         ...
 
-    def get_postprocessing_steps(self) -> list[list[Callable]] | None:
+    def get_postprocessing_steps(self) -> list[list[Callable] | None] | None:
         """Load postprocessing steps for the PGM."""
         return None
 
@@ -108,7 +111,7 @@ class PGMGenerator(ABC):
         """Load latent variables for the PGM."""
         return []
 
-    def get_mappings(self, data: BaseModel) -> dict[str, pd.DataFrame]:
+    def get_mappings(self, data: Any) -> dict[str, pd.DataFrame]:
         """Load deterministic mappings for use in postprocessing."""
         return {}
 
@@ -121,7 +124,6 @@ class PGMGenerator(ABC):
         Create Bayesian Models based on model_edges, adding root nodes as needed.
         Add CPDs to the models.
         """
-        logger.info("Successfully added and verified all CPDs.")
         models = [BayesianNetwork(edges) for edges in model_edges]
         # Add nodes with defined cpds to model (if not already present)
         for model, model_cpds in zip(models, cpds):
@@ -146,7 +148,7 @@ class PGMGenerator(ABC):
                 )
             for name, cpd in model_cpds.items():
                 model.add_cpds(cpd)
-        logger.info("Successfully built the network.")
+        logger.info("Successfully added and verified all CPDs.")
         return models
 
     def fill_na_and_gen_cpd(
@@ -183,12 +185,12 @@ class PGMGenerator(ABC):
         evidence_size = np.prod(evidence_dims) if evidence_dims else 1
 
         def _build_rows():
-            # Calculate row (variable) indices
-            try:
-                counts_var = counts[variable_name].cat.codes.to_numpy(dtype=np.int64)
-            except AttributeError as e:
-                print(f"{variable_name}, {counts.columns}")
-                raise e
+            if not hasattr(counts[variable_name], "cat"):
+                raise TypeError(
+                    f"Column '{variable_name}' must be a categorical dtype, "
+                    f"got {counts[variable_name].dtype!r}"
+                )
+            counts_var = counts[variable_name].cat.codes.to_numpy(dtype=np.int64)
             return torch.from_numpy(counts_var)
 
         def _build_cols():
@@ -204,11 +206,12 @@ class PGMGenerator(ABC):
 
             # Vectorized calculation for each evidence variable
             for ev, stride in zip(evidence, strides):
-                try:
-                    counts_ev = counts[ev].cat.codes.to_numpy(dtype=np.int64)
-                except AttributeError as e:
-                    print(f"{ev}, {counts.columns}")
-                    raise e
+                if not hasattr(counts[ev], "cat"):
+                    raise TypeError(
+                        f"Evidence column '{ev}' must be a categorical dtype, "
+                        f"got {counts[ev].dtype!r}"
+                    )
+                counts_ev = counts[ev].cat.codes.to_numpy(dtype=np.int64)
                 ev_indices = torch.from_numpy(counts_ev)
                 cols += ev_indices * stride
             return cols

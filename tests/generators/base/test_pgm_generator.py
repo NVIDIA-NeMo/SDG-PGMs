@@ -1,23 +1,25 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import numpy as np
 import pandas as pd
 import pytest
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.models import BayesianNetwork
 
-from pgms.generators.base import pgm_generator
+from pgms.generators.base.pgm_generator import Edge, PGMGenerator
 
 
-class DummyPGMGenerator(pgm_generator.PGMGenerator):
+class DummyPGMGenerator(PGMGenerator):
     def get_data(self):
         # Return some dummy data
         return {"dummy": True}
 
     def get_edges(self):
-        # Return a list of lists with edges only between B -> C.
-        return [[], [("B", "C")]]
+        return [[], [Edge(start="B", end="C")]]
 
     def get_variables(self, data):
-        # Define two variables, each with two possible states.
+        # Define three variables with varying state counts.
         return {"A": ["a1", "a2"], "B": ["b1", "b2"], "C": ["c1", "c2", "c3", "c4"]}
 
     def get_cpds(self, data):
@@ -178,7 +180,7 @@ def test_generate_samples(
     samples = gen.generate_samples(
         size=10, evidence=evidence, disable_progress_bar=True
     )
-    # Verify that the returned samples is a DataFrame with 5 rows.
+    # Verify that the returned samples is a DataFrame with 10 rows.
     assert isinstance(samples, pd.DataFrame)
     assert len(samples) == 10
     # Expected columns should match the variables.

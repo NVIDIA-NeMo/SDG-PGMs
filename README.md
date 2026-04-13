@@ -6,7 +6,7 @@ SDG-PGMs is a Python framework for building **Probabilistic Graphical Models (PG
 
 PGMs excel at capturing the kinds of complex conditional dependencies that naive random sampling or LLM-only generation cannot: how age correlates with occupation, how geography influences education, how department affects seniority and compensation. Any domain where structured relationships between entities matter -- people, products, transactions, devices, or proprietary business objects -- can be modeled as a PGM. All that is needed is probability distributions over the attributes and their relationships.
 
-Because PGMs are built from **aggregate statistical distributions** (counts, crosstabs, census tables) rather than individual records, generated data is synthetic by construction -- no output can be traced back to any specific source record. This makes PGMs well-suited for creating realistic datasets that reflect sensitive or proprietary distributions without exposing the underlying data.
+When PGMs are built from **aggregate statistical distributions** (counts, crosstabs, census tables) rather than individual records, the generated data is sampled from learned distributions rather than copied from source rows. This makes PGMs a natural fit for generating realistic datasets that mirror sensitive or proprietary distributions while reducing exposure of the underlying data -- though formal privacy guarantees (e.g., differential privacy; see also [Safe Synthesizer](https://github.com/NVIDIA-NeMo/Safe-Synthesizer)) require additional measures beyond what this framework provides.
 
 ## 🌍 Showcase: Nemotron-Personas
 

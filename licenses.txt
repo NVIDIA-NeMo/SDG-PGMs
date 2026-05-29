@@ -11,3 +11,6 @@ Generated: 2026-04-10
  8. smart-open     7.5.1   MIT License
  9. torch          2.11.0  BSD-3-Clause
 10. rich           14.3.3  MIT
+
+Optional ("examples" extra) dependencies:
+11. anyascii        0.3.3   ISC License

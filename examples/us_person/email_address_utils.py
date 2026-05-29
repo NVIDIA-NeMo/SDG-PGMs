@@ -43,32 +43,6 @@ EMAIL_DOMAINS_MAP = {
             "aol.com": 1.1,
         },
     },
-    "IN": {
-        "email_domains_under_30": {
-            "gmail.com": 514,
-            "yahoo.com": 11,
-            "yahoo.co.in": 3,
-            "hotmail.com": 35,
-            "outlook.com": 17,
-            "rediffmail.com": 0,
-        },
-        "email_domains_30_50": {
-            "gmail.com": 184,
-            "yahoo.com": 48,
-            "yahoo.co.in": 2,
-            "hotmail.com": 16,
-            "outlook.com": 8,
-            "rediffmail.com": 3,
-        },
-        "email_domains_over_50": {
-            "gmail.com": 126,
-            "yahoo.com": 11,
-            "yahoo.co.in": 1,
-            "hotmail.com": 10,
-            "outlook.com": 5,
-            "rediffmail.com": 8,
-        },
-    },
 }
 
 
@@ -119,10 +93,11 @@ class EmailAddressGen:
         """
         Get a free email domain heuristically dependent on
         overall number of subscribers and user age.
+
+        Domain statistics are locale-specific. To add a new locale, extend
+        ``EMAIL_DOMAINS_MAP`` with an entry mirroring the ``"US"`` structure
+        (see the country-adaptation section of ``examples/us_person/README.md``).
         """
-
-        # TODO: Update domain statistics for new locales
-
         if age < 30:
             return random.choices(
                 list(self.email_domains_under_30.keys()),
@@ -162,9 +137,11 @@ class EmailAddressGen:
         # Normalize names (lowercase, remove spaces and special chars)
         first = re.sub(r"[^a-z0-9]", "", anyascii.anyascii(first_name).lower())
         last = re.sub(r"[^a-z0-9]", "", anyascii.anyascii(last_name).lower())
-        assert len(first) > 0 and len(last) > 0, (
-            "Both first and last name must be non-empty, after removing non-alphanumeric."
-        )
+        if not (first and last):
+            raise ValueError(
+                "Both first and last name must be non-empty after removing "
+                "non-alphanumeric characters."
+            )
         first_initial = first[0]
         last_initial = last[0]
 

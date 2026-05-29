@@ -23,6 +23,9 @@ dependencies = [
     "rich>=13.0,<15",
 ]
 
+[project.optional-dependencies]
+examples = ["anyascii>=0.3,<1"]
+
 [project.urls]
 Homepage = "https://github.com/NVIDIA-NeMo/SDG-PGMs"
 Repository = "https://github.com/NVIDIA-NeMo/SDG-PGMs"
@@ -51,7 +54,7 @@ ignore = [
 known-first-party = ["pgms", "data_designer_plugins"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "--import-mode=importlib"
 
 [tool.setuptools.packages.find]

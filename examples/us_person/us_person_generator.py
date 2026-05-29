@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
 import random
 import uuid
 from collections.abc import Callable
@@ -15,16 +14,12 @@ import torch
 from pgmpy import config
 from pgmpy.factors.discrete import TabularCPD
 
-from examples.us_person import (
-    age_utils,
-    email_address_utils,
-)
-from examples.us_person import (
-    us_person_field_utils as utils,
-)
-from examples.us_person.data import USPersonData
 from pgms.generators.base.pgm_generator import Edge, PGMGenerator
 from pgms.generators.base.utils import tensor_normalize
+
+from . import age_utils, email_address_utils
+from . import us_person_field_utils as utils
+from .data import USPersonData
 
 # Set up logging
 logging.basicConfig()
@@ -33,32 +28,31 @@ logger.setLevel(logging.INFO)
 
 USPersonDataPath = str | IO
 
-DEFAULT_PERSON_DATA_FILENAME = "person_data_v4.tar"
-DEFAULT_PERSON_DATA_PRIMARY_PATH = os.environ.get(
-    "US_PERSON_DATA_PATH",
-    str(Path(__file__).parent.joinpath("data", DEFAULT_PERSON_DATA_FILENAME)),
+DEFAULT_PERSON_DATA_FILENAME = "person_data.tar"
+DEFAULT_PERSON_DATA_PRIMARY_PATH = str(
+    Path(__file__).parent / "data" / DEFAULT_PERSON_DATA_FILENAME
 )
 
 PERSON_DATA_TARFILE_PATHS = {
-    "total_dist": "census_total_by_zipcode.parquet",
-    "age_dist": "census_single_year_of_age.parquet",
-    "age_sex_dist": "census_age_sex_by_zipcode.parquet",
-    "city_state_dist": "usps_city_state_by_zipcode.parquet",
-    "county_dist": "kaggle_county_by_zipcode.parquet",
-    "marital_dist": "census_marital_by_zipcode.parquet",
-    "education_dist": "census_education_by_zipcode.parquet",
-    "bachelors_dist": "census_bachelors_by_zipcode.parquet",
-    "occupation_dist": "census_derived_occupation_by_education_age_bachelors.parquet",
-    "detailed_occupation_dist": "census_detailed_occupations_national.parquet",
-    "race_dist": "census_race_by_zipcode.parquet",
-    "ethnicity_dist": "census_ethnicity_by_zipcode.parquet",
-    "ethnicity_total_dist": "census_ethnicity_total_by_zipcode.parquet",
-    "race_ethnicity_dist": "census_race_ethnicity_by_zipcode.parquet",
-    "last_name_dist": "harvard_nemo_surname_by_group.parquet",
-    "first_name_dist": "harvard_nemo_first_name_by_group_gender.parquet",
-    "middle_name_dist": "harvard_nemo_middle_name_by_group_gender.parquet",
-    "street_name_dist": "openaddresses_street_name_by_zipcode.parquet",
-    "unit_dist": "openaddresses_unit_by_zipcode.parquet",
+    "total_dist": "population_by_zipcode.parquet",
+    "age_dist": "age_by_age_group_sex.parquet",
+    "age_sex_dist": "age_group_sex_by_zipcode.parquet",
+    "city_state_dist": "city_state_by_zipcode.parquet",
+    "county_dist": "county_by_zipcode.parquet",
+    "marital_dist": "marital_status_by_age_sex_zipcode.parquet",
+    "education_dist": "education_by_age_sex_zipcode.parquet",
+    "bachelors_dist": "bachelors_field_by_age_sex_zipcode.parquet",
+    "occupation_dist": "occupation_by_education_age.parquet",
+    "detailed_occupation_dist": "detailed_occupation_by_occupation_sex.parquet",
+    "race_dist": "race_group_by_zip_prefix_race_broad.parquet",
+    "ethnicity_dist": "ethnicity_origin_by_zip_prefix_ethnicity.parquet",
+    "ethnicity_total_dist": "ethnicity_by_zip_prefix.parquet",
+    "race_ethnicity_dist": "race_broad_by_zip_prefix_ethnicity.parquet",
+    "last_name_dist": "last_name_by_ethnic_background.parquet",
+    "first_name_dist": "first_name_by_ethnic_background_sex.parquet",
+    "middle_name_dist": "middle_name_by_ethnic_background_sex.parquet",
+    "street_name_dist": "street_name_by_zipcode_category.parquet",
+    "unit_dist": "unit_by_zipcode_category.parquet",
     "age_group_map": "age_group_map.parquet",
 }
 
@@ -69,12 +63,14 @@ class USPersonGenerator(PGMGenerator):
         data_path: USPersonDataPath | None = None,
         data: USPersonData | None = None,
     ):
-        assert not (data_path and data), (
-            "Only one of data_path or data should be provided."
-        )
+        if data_path is not None and data is not None:
+            raise ValueError("Only one of data_path or data should be provided.")
         if (data is None) and (data_path is None):
             data_path = DEFAULT_PERSON_DATA_PRIMARY_PATH
         super().__init__(data_path=data_path, data=data)
+        # Reused per-row inside generate_email_address; building this once
+        # avoids the cost of re-loading the locale lookup for every sample.
+        self._email_gen = email_address_utils.EmailAddressGen(locale="US")
 
     def get_variables(self, data: USPersonData) -> dict[str, list[str]]:
         return {
@@ -124,6 +120,9 @@ class USPersonGenerator(PGMGenerator):
             "unit": list(data.unit_dist["unit"].cat.categories),
             "city": list(data.city_state_dist["city"].cat.categories),
             "state": list(data.city_state_dist["state"].cat.categories),
+            # Not a PGM node; declared so that `country` can be passed via
+            # `generate_samples(evidence=...)` for symmetry with city/state
+            # (both are also derived in post-processing).
             "country": ["USA"],
         }
 
@@ -234,7 +233,10 @@ class USPersonGenerator(PGMGenerator):
             state_names={"zipcode": list(self.variables["zipcode"])},
         )
 
-        # Calculate address probabilities
+        # Calculate address probabilities. pseudocount=0 is intentional: the
+        # observed support for (zipcode_category, street_name) and
+        # (zipcode_category, unit) is structurally complete in this example's
+        # input, so smoothing would introduce spurious mass.
         street_name_cpd = self.fill_na_and_gen_cpd(
             data.street_name_dist, "street_name", ["zipcode_category"], pseudocount=0
         )
@@ -291,7 +293,10 @@ class USPersonGenerator(PGMGenerator):
             data.occupation_dist, "occupation", occupation_evidence
         )
 
-        # Calculate detailed occupation probabilities
+        # Calculate detailed occupation probabilities. pseudocount=0 is
+        # intentional: detailed occupations are only meaningful within their
+        # parent occupation group, so a uniform Laplace prior would put mass
+        # on (occupation, detailed_occupation) pairs that should be impossible.
         detailed_occupation_evidence = ["occupation", "sex"]
         detailed_occupation_cpd = self.fill_na_and_gen_cpd(
             data.detailed_occupation_dist,
@@ -625,9 +630,7 @@ class USPersonGenerator(PGMGenerator):
         Generate an email address based on the first name, middle name, last name, age and birth date.
         """
         samples["email_address"] = samples.apply(
-            lambda row: email_address_utils.EmailAddressGen(
-                locale="US"
-            ).generate_email_address(
+            lambda row: self._email_gen.generate_email_address(
                 first_name=row["first_name"],
                 middle_name=row["middle_name"],
                 last_name=row["last_name"],

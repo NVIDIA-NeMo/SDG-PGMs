@@ -33,7 +33,7 @@ uv sync
 
 ## 🚀 Quick Start
 
-The framework ships as a base layer. To generate data, implement a `PGMGenerator` subclass (see [Writing Your Own Generator](#writing-your-own-pgm-generator) below):
+The framework ships as a base layer. To generate data, implement a `PGMGenerator` subclass (see [Writing Your Own Generator](#writing-your-own-pgm-generator) below). For a complete worked example -- including a recipe for adapting the pattern to other countries and guidance on sourcing public-domain statistical data -- see [`examples/us_person/`](examples/us_person/).
 
 ```python
 from my_generators import MyPersonGenerator

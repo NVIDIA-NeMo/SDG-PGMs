@@ -1,48 +1,39 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import random
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator
 
-ZIP_AREA_CODE_DATA_PATH_ENV = "US_PERSON_AREA_CODE_DATA_PATH"
 DEFAULT_ZIP_AREA_CODE_DATA_PATH = (
     Path(__file__).parent / "data" / "zip_area_code_map.parquet"
 )
-ZIPCODE_AREA_CODE_MAP: dict[str, int] | None = None
-ZIPCODE_POPULATION_MAP: dict[str, int] | None = None
 
 
-def _zip_area_code_data_path() -> Path:
-    return Path(
-        os.environ.get(ZIP_AREA_CODE_DATA_PATH_ENV, DEFAULT_ZIP_AREA_CODE_DATA_PATH)
-    )
-
-
-def _load_zip_area_code_maps() -> tuple[dict[str, int], dict[str, int]]:
-    global ZIPCODE_AREA_CODE_MAP, ZIPCODE_POPULATION_MAP
-    if ZIPCODE_AREA_CODE_MAP is not None and ZIPCODE_POPULATION_MAP is not None:
-        return ZIPCODE_AREA_CODE_MAP, ZIPCODE_POPULATION_MAP
-
-    data_path = _zip_area_code_data_path()
-    if not data_path.exists():
+@lru_cache(maxsize=1)
+def _load_zip_area_code_maps(
+    data_path: str | None = None,
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Load and cache the (zipcode -> area_code) and (zipcode -> population) maps."""
+    path = Path(data_path) if data_path else DEFAULT_ZIP_AREA_CODE_DATA_PATH
+    if not path.exists():
         raise FileNotFoundError(
-            f"ZIP area-code data was not found at {data_path}. "
-            f"Set {ZIP_AREA_CODE_DATA_PATH_ENV} or add a dummy parquet at "
-            f"{DEFAULT_ZIP_AREA_CODE_DATA_PATH}."
+            f"ZIP area-code data was not found at {path}. "
+            f"Run `python -m examples.us_person.build_dummy_data` to regenerate, "
+            f"or pass a real parquet via the data_path argument."
         )
 
-    zip_area_code_data = pd.read_parquet(data_path)
-    ZIPCODE_AREA_CODE_MAP = dict(
+    zip_area_code_data = pd.read_parquet(path)
+    zipcode_area_code_map = dict(
         zip(zip_area_code_data["zipcode"], zip_area_code_data["area_code"])
     )
-    ZIPCODE_POPULATION_MAP = dict(
+    zipcode_population_map = dict(
         zip(zip_area_code_data["zipcode"], zip_area_code_data["count"])
     )
-    return ZIPCODE_AREA_CODE_MAP, ZIPCODE_POPULATION_MAP
+    return zipcode_area_code_map, zipcode_population_map
 
 
 def get_area_code(zip_prefix: str | None = None) -> str:
@@ -69,9 +60,9 @@ def get_area_code(zip_prefix: str | None = None) -> str:
     matching_zipcodes = [
         [z, c] for z, c in zipcode_population_map.items() if z.startswith(zip_prefix)
     ]
-    zipcodes, weights = zip(*matching_zipcodes)
-    if not zipcodes:
+    if not matching_zipcodes:
         raise ValueError(f"No ZIP codes found with prefix {zip_prefix}.")
+    zipcodes, weights = zip(*matching_zipcodes)
     zipcode = random.choices(zipcodes, weights=weights, k=1)[0]
     return str(zipcode_area_code_map[zipcode])
 
@@ -135,8 +126,8 @@ class PhoneNumber(BaseModel):
 
     @classmethod
     def from_area_code(cls, area_code: str) -> "PhoneNumber":
-        prefix = str(random.randint(200, 1000))
-        line_number = str(random.randint(0, 10000)).zfill(4)
+        prefix = str(random.randint(200, 999))
+        line_number = str(random.randint(0, 9999)).zfill(4)
         return PhoneNumber(area_code=area_code, prefix=prefix, line_number=line_number)
 
     @classmethod

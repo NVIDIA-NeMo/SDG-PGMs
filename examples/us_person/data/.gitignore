@@ -1,5 +1,0 @@
-# Keep private data assets out of this repository.
-*
-!.gitignore
-!person_data_v4.tar
-!zip_area_code_map.parquet

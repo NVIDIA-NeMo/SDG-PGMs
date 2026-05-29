@@ -4,11 +4,16 @@
 import random
 from datetime import date
 
-from examples.us_person.us_phone_number_utils import PhoneNumber
+from .us_phone_number_utils import PhoneNumber
 
 SSN_RANDOMIZATION_DATE = date(2011, 6, 25)
 
-# Area number mapping by state code (pre-2011)
+# Simplified one-contiguous-range-per-state approximation of historic SSA
+# area-number assignments (pre-2011 randomization). The real assignments are
+# discontinuous per state (e.g., NM also held 585, AZ also held 600-601, and
+# the Caribbean/Pacific territories shared 580-587). See SSA's public
+# reference: https://www.ssa.gov/employer/stateweb.htm. These ranges are
+# illustrative only and intentionally non-overlapping.
 STATE_TO_AREA_SSN = {
     "NH": [1, 3],
     "ME": [4, 7],
@@ -51,7 +56,7 @@ STATE_TO_AREA_SSN = {
     "ID": [518, 519],
     "WY": [520, 520],
     "CO": [521, 524],
-    "NM": [525, 527],
+    "NM": [525, 525],
     "AZ": [526, 527],
     "UT": [528, 529],
     "NV": [530, 530],
@@ -61,10 +66,10 @@ STATE_TO_AREA_SSN = {
     "AK": [574, 574],
     "HI": [575, 576],
     "DC": [577, 579],
-    "VI": [580, 580],
-    "PR": [580, 599],
+    "PR": [580, 584],
+    "VI": [585, 585],
     "GU": [586, 586],
-    "AS": [586, 586],
+    "AS": [587, 587],
 }
 
 
@@ -97,32 +102,35 @@ def generate_us_national_id(state: str, birth_date: str) -> str:
     """
     Generate a synthetic SSN based on state and birth date.
 
-    The first three digits are derived from the state the person lives in,
-    if born after June 25, 2011, with an 80% chance. Otherwise, the first
-    three digits are randomly chosen from the possible codes.
+    The Social Security Administration switched to randomized area numbers
+    on June 25, 2011. For births *before* that date, this function picks
+    the area number from the state's historic SSA range with probability
+    0.7, and from a random other state's range with probability 0.3
+    (Americans changed states). For births on or after that date, the
+    area number is drawn from the full 1-899 range.
+
+    The output is purely illustrative: it follows the SSN format
+    ``XXX-XX-XXXX`` but is not a real SSN and is not validated against
+    any government source.
 
     Args:
-        state (str): Two-letter state code (e.g., "NY", "CA")
-        birth_date (str): Date of birth in ISO format
+        state: Two-letter state code (e.g., "NY", "CA").
+        birth_date: Date of birth in ISO format.
 
     Returns:
-        str: A formatted synthetic SSN in the format "XXX-XX-XXXX"
-
+        A formatted synthetic SSN in the format "XXX-XX-XXXX".
     """
     birth_date = date.fromisoformat(birth_date)
     if birth_date < SSN_RANDOMIZATION_DATE:
         if random.random() < 0.3:
-            # Maybe born in a different state
             area_range = random.choice(list(STATE_TO_AREA_SSN.values()))
-        area_range = STATE_TO_AREA_SSN.get(state, [1, 899])
+        else:
+            area_range = STATE_TO_AREA_SSN.get(state, [1, 899])
     else:
         area_range = [1, 899]
     area = 666
     while area == 666:
-        # Unallowed area code
         area = random.randint(area_range[0], area_range[1])
-    # Group number
     group = random.randint(1, 99)
-    # Serial number
     serial = random.randint(1, 9999)
     return f"{area:03d}-{group:02d}-{serial:04d}"

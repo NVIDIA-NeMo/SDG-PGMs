@@ -9,11 +9,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from examples.us_person.data import USPersonData
-from examples.us_person.us_person_generator import PERSON_DATA_TARFILE_PATHS
+from .data import USPersonData
+from .us_person_generator import PERSON_DATA_TARFILE_PATHS
 
 OUTPUT_DIR = Path(__file__).parent / "data"
-DUMMY_PERSON_DATA_FILENAME = "person_data_v4.tar"
+DUMMY_PERSON_DATA_FILENAME = "person_data.tar"
 DUMMY_AREA_CODE_FILENAME = "zip_area_code_map.parquet"
 RNG = np.random.default_rng(20260430)
 

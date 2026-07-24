@@ -340,6 +340,8 @@ class PGMGenerator(ABC):
             # If partial_samples is specified, can only generate < partial_samples.shape[0] number of samples
             # at a time. For simplicity, just generate the same size as partial_samples.shape[0].
             if partial_samples is not None:
+                if partial_samples.shape[0] == 0:
+                    raise ValueError("partial_samples cannot be empty")
                 _size = partial_samples.shape[0]
 
             _sampled = self._forward_sample(size=_size, partial_samples=partial_samples)
@@ -358,7 +360,7 @@ class PGMGenerator(ABC):
 
             prob_ucb = bernoulli_ucb(len(_sampled), _size)
             if prob_ucb < REJ_SAMP_FAIL_PROB or (
-                prob_ucb < REJ_SAMP_LARGE_FAIL_PROB and _size > REJ_SAMP_LARGE_FAIL_SIZE
+                prob_ucb < REJ_SAMP_LARGE_FAIL_PROB and size > REJ_SAMP_LARGE_FAIL_SIZE
             ):
                 if progress is not None:
                     progress.stop()
